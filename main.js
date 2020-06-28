@@ -13,9 +13,14 @@ const run = async () => {
     const get_dirs = async path => {   // get all directories
         console.log('path: ', path);
         let dirs = []
+        let dir_exeptions = ['.git'];
+        
         for (const file of await readdir(path)) {
-            if ((await stat(join(path, file))).isDirectory()) {
-                dirs = [...dirs, file]
+            console.log('file of', file);
+            if(!dir_exeptions.includes(file)) {
+                if ((await stat(join(path, file))).isDirectory()) {
+                    dirs = [...dirs, file]
+                }
             }
         }
         console.log('dirs', dirs);
