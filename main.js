@@ -1,5 +1,6 @@
-const { readdir, stat } = require("fs").promises
+const fs = require('fs');
 const { join } = require("path");
+const cwd = process.cwd();
 
 let data = {
     test_data: 'test data value'
@@ -9,45 +10,46 @@ let result = {
     test_result: 'test result value'
 };
 
-const run = async () => {
-    const get_dirs = async path => {   // get all directories
-        console.log('path: ', path);
-        let dirs = []
-        let dir_exeptions = ['.git'];
-        
-        for (const file of await readdir(path)) {
-            console.log('file of', file);
-            if(!dir_exeptions.includes(file)) {
-                if ((await stat(join(path, file))).isDirectory()) {
-                    dirs = [...dirs, file]
+(async() =>{
+    const run = async (cwd) => {
+        async function get_dirs(path) {   // get all directories
+            console.log('path: ', path);
+            let dirs = []
+            let dir_exeptions = ['.git'];
+            
+            for (const file of await fs.readdirSync(path)) {
+                if(!dir_exeptions.includes(file)) {
+                    if ((fs.statSync(join(path, file))).isDirectory()) {
+                        dirs = [...dirs, file]
+                    }
+                }
+            }
+            console.log('dirs', cwd);
+            return dirs;
+        }
+        const dirs = await get_dirs(cwd);
+    
+        async function execute(folders) {
+            for(const folder of folders) {
+                console.log(`checking folder ${folder}`);
+                let files = fs.readdirSync(folder);
+                for(const file of files) {
+                    console.log(`found file ${file}`);
+                    const my_function = require(join(cwd, folder, file));
+                    console.log(`result: `, await my_function(data, result), '\n');
                 }
             }
         }
-        console.log('dirs', dirs);
-        return Promise.resolve(dirs);
+        await execute(dirs);
     }
-    const dirs = await get_dirs('./');
-
-    const execute = async folders => {
-        const fs = require('fs');
-        
-        folders.forEach( async folder => {
-            console.log(`checking folder ${folder}....\n`);
-            let files = fs.readdirSync(folder);
-            files.forEach( async file => {
-                console.log(`found file ${file}...\n`);
-                const my_function = require(`./${folder}/${file}`);
-                console.log(`${file} result: `, my_function(data, result), '\n');
-            })
-        });
-    }
-    execute(dirs);
-}
-
-run().then(() => {
-    const my_function = (data, result) => {
-        console.log('execute main.js my_function');
+    
+    await run(cwd);
+    
+    function my_function (data, result) {
+        console.log('Executing main.js my_function...');
         return result;
     }
     my_function();
-});
+})();
+
+
